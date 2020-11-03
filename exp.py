@@ -41,7 +41,7 @@ async def allen(message: types.Message):
 @dp.message_handler(commands=["remove"])
 async def remove(message: types.Message):
     await message.answer(ReplyKeyboardRemove(),reply_markup=ReplyKeyboardRemove())
-@dp.callback_query_handler(commands=["reload"])
+@dp.message_handler(commands=["reload"])
 async def reloadVars(message: types.Message):
     await message.answer("Reloaded")
 
