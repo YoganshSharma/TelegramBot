@@ -1,5 +1,6 @@
 import asyncio
-from constants import DIGITAL_MODULE_PATH
+import os
+from constants import *
 from aiogram.utils import executor
 from urllib import parse
 
@@ -8,9 +9,9 @@ import logging
 from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types.reply_keyboard import  ReplyKeyboardRemove
 from aiogram import Bot, Dispatcher, executor, types
-API_TOKEN = "1438227216:AAGR2dm0tosD1f3IwLMY1s4VGoHvsvdG7C0"
+API_TOKEN = os.environ.get("BOT_TOKEN")
 AllenMarkup = InlineKeyboardMarkup()
-AllenMarkup.add(InlineKeyboardButton("Live",callback_data="live"),InlineKeyboardButton("Digital",callback_data="digital"),InlineKeyboardButton("cancel",callback_data="cancel"))
+AllenMarkup.add(InlineKeyboardButton("Live",callback_data="live"),InlineKeyboardButton("Digital",callback_data="digital"),InlineKeyboardButton("Cancel",callback_data="cancel"))
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 # Initialize bot and dispatcher
@@ -40,13 +41,13 @@ async def allen(message: types.Message):
 @dp.message_handler(commands=["remove"])
 async def remove(message: types.Message):
     await message.answer(ReplyKeyboardRemove(),reply_markup=ReplyKeyboardRemove())
-    
+@dp.callback_query_handler(commands=["reload"])
+async def reloadVars(message: types.Message):
+    await message.answer("Reloaded")
 
 
 @dp.message_handler()
 async def echo(message: types.Message):
-    # old style:
-    # await bot.send_message(message.chat.id, message.text)
     if message.is_command():
         await message.answer("There is no such Command Try using /help")
     else:
@@ -62,7 +63,7 @@ def toMarkup(links_list):
         else:
             logging.warning("Markup not succesful invalid link type")
     return markup
-    
+
 @dp.callback_query_handler()
 async def callback(callback_query: types.CallbackQuery):
     if callback_query.data=="live":
@@ -80,21 +81,20 @@ async def callback(callback_query: types.CallbackQuery):
         ans = await Scrap().allDigital()
         markup = toMarkup(ans)
         
-        await  asyncio.gather(callback_query.message.edit_text("These are the links"),callback_query.message.edit_reply_markup(markup))
+        await  asyncio.gather(callback_query.message.edit_text("Select one of these"),callback_query.message.edit_reply_markup(markup))
 
     elif callback_query.data=="cancel":
-        await asyncio.gather(callback_query.message.edit_reply_markup(None),callback_query.message.edit_text("Cancele"))
+        
+        await asyncio.gather(callback_query.message.edit_reply_markup(None),callback_query.message.edit_text("Cancelled"))
 
-    elif callback_query.data :
+    elif callback_query.data and callback_query not in ["cancel", "digital", "live"]:
         url = parse.urljoin(DIGITAL_MODULE_PATH,callback_query.data)
         ans = await Scrap().digital(url)
         if type(ans) is str:
-            print("IT SI str")
             await  asyncio.gather(callback_query.message.edit_text(ans))
             return
         print(ans)
         markup = toMarkup(ans)
-        
         await  asyncio.gather(callback_query.message.edit_text("These are the links"),callback_query.message.edit_reply_markup(markup))
 
 if __name__ == '__main__':
